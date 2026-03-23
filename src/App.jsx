@@ -591,12 +591,15 @@ export default function App() {
   const pKey = aRole === "A" ? "partyA" : "partyB";
   const myName = entry?.[pKey]?.name || userName;
   const hasPartner = !!entry?.partyB;
+  const partnerName = aRole === "A" ? entry?.partyB?.name : entry?.partyA?.name; // always the OTHER person
   const openCard = cards.find(c => c.id === activeCard);
   const filledCards = cards.filter(c => c.body.trim().length > 0);
   const exchangeCount = entry ? Math.floor((entry[pKey]?.chatHistory?.length || 0) / 2) : 0;
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [msgs, busy]);
   useEffect(() => { if(!taRef.current)return; taRef.current.style.height="auto"; taRef.current.style.height=Math.min(taRef.current.scrollHeight,200)+"px"; }, [input]);
+  // Keep group chat in sync when real-time update arrives
+  useEffect(() => { if (screen === "group" && entry) setMsgs(entry.groupChat || []); }, [entry?.groupChat?.length, screen]);
 
   // ── supabase auth listener ────────────────────────────────────────────────
   useEffect(() => {
@@ -627,6 +630,25 @@ export default function App() {
     }
     loadData();
   }, [user]);
+
+  // ── real-time: sync active entry across both parties ─────────────────────
+  useEffect(() => {
+    if (!activeId || !user) return;
+    const channel = supabase
+      .channel(`entry-rt:${activeId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'entries',
+        filter: `id=eq.${activeId}`,
+      }, (payload) => {
+        const updated = db.dbToEntry(payload.new);
+        // Update entries list — the group-chat sync effect above handles msgs
+        setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeId, user]);
 
   // ── auth handlers ─────────────────────────────────────────────────────────
   async function handleAuth() {
@@ -1113,11 +1135,11 @@ export default function App() {
                       {exchangeCount < 3 ? "sharing" : "processing"}
                     </span>
                     {aRole==="A" && (
-                      <button onClick={()=>{ if(!isDuo){setUpgradeReason("Inviting a partner is a Duo feature.");setShowUpgrade(true);}else setModal("invite"); }} style={{ padding:"5px 13px", background:"transparent", border:"1px solid #E0D9D0", borderRadius:8, cursor:"pointer", fontSize:12, color:"#A09080", fontFamily:"'DM Sans',sans-serif" }}>+ Invite someone</button>
+                      <button onClick={()=>{ if(!isPro){setUpgradeReason("Inviting a partner requires Pro or Duo.");setShowUpgrade(true);}else setModal("invite"); }} style={{ padding:"5px 13px", background:"transparent", border:"1px solid #E0D9D0", borderRadius:8, cursor:"pointer", fontSize:12, color:"#A09080", fontFamily:"'DM Sans',sans-serif" }}>+ Invite someone</button>
                     )}
                     {hasPartner && (
                       <button onClick={openGroup} style={{ padding:"6px 14px", background:"#2C1F14", color:"#B5936E", border:"none", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600, fontFamily:"'DM Sans',sans-serif", flexShrink:0 }}>
-                        Open with {entry?.partyB?.name} →
+                        Open with {partnerName} →
                       </button>
                     )}
                   </div>
@@ -1148,7 +1170,7 @@ export default function App() {
                   <div style={{ padding:"0 20px", height:50, borderBottom:"1px solid rgba(0,0,0,0.055)", display:"flex", alignItems:"center", gap:12, flexShrink:0, background:"#FAF7F2" }}>
                     <button onClick={()=>{setScreen("write");setMsgs(entry[pKey]?.chatHistory||[]);}} style={{ border:"none", background:"none", cursor:"pointer", fontSize:16, color:"#B8AFA5", padding:"4px 6px" }}>←</button>
                     <span style={{ fontWeight:600, fontSize:14, color:"#2C1F14", fontFamily:"'Lora',serif", fontStyle:"italic", flex:1 }}>{entry?.title}</span>
-                    <span style={{ fontSize:12, color:"#A09080" }}>· With {entry?.partyB?.name}</span>
+                    <span style={{ fontSize:12, color:"#A09080" }}>· With {partnerName}</span>
                   </div>
                   <div style={{ flex:1, overflowY:"auto", background:"#FAF7F2" }}>
                     <div style={{ maxWidth:660, margin:"0 auto", padding:"22px 26px 130px" }}>
