@@ -4,6 +4,8 @@ import { supabase } from './supabase'
 
 export const dbToEntry = (row) => ({
   id: row.id,
+  userId: row.user_id,               // ← needed for role detection
+  partyBUserId: row.party_b_user_id, // ← needed for role detection
   title: row.title,
   inviteCode: row.invite_code,
   status: row.status,
@@ -13,11 +15,22 @@ export const dbToEntry = (row) => ({
   createdAt: new Date(row.created_at).getTime(),
 })
 
-export const entryToDb = (e, userId) => ({
+// For INSERT — includes user_id to set ownership
+export const entryToDbInsert = (e, userId) => ({
   id: e.id,
   user_id: userId,
   title: e.title,
   invite_code: e.inviteCode,
+  status: e.status,
+  party_a: e.partyA,
+  party_b: e.partyB,
+  group_chat: e.groupChat || [],
+  updated_at: new Date().toISOString(),
+})
+
+// For UPDATE — never touch user_id (prevents party B from hijacking ownership)
+export const entryToDbUpdate = (e) => ({
+  title: e.title,
   status: e.status,
   party_a: e.partyA,
   party_b: e.partyB,
@@ -52,7 +65,12 @@ export async function getProfile(userId) {
 }
 
 export async function createProfile(userId, name) {
-  const { error } = await supabase.from('profiles').insert({ id: userId, name })
+  const { error } = await supabase.from('profiles').insert({ id: userId, name, plan: 'free' })
+  return !error
+}
+
+export async function updateProfile(userId, updates) {
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
   return !error
 }
 
@@ -68,14 +86,14 @@ export async function loadEntries(userId) {
 }
 
 export async function insertEntry(entry, userId) {
-  const { error } = await supabase.from('entries').insert(entryToDb(entry, userId))
+  const { error } = await supabase.from('entries').insert(entryToDbInsert(entry, userId))
   return !error
 }
 
-export async function updateEntry(entry, userId) {
+export async function updateEntry(entry) {
   const { error } = await supabase
     .from('entries')
-    .update(entryToDb(entry, userId))
+    .update(entryToDbUpdate(entry))
     .eq('id', entry.id)
   return !error
 }

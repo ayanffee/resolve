@@ -285,7 +285,7 @@ function CardView({ card, onUpdate, onClose }) {
 
 // ─── PROFILE VIEW ────────────────────────────────────────────────────────────
 
-function ProfileView({ userName, entries, cards }) {
+function ProfileView({ userName, entries, cards, isPro, onUpgrade }) {
   const [portrait, setPortrait] = useState(null);
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -366,11 +366,25 @@ function ProfileView({ userName, entries, cards }) {
             <p style={{ fontFamily:"'Lora',serif", color:"#7A6A5C", fontSize:15, lineHeight:1.7, marginBottom:28, fontStyle:"italic" }}>
               Resolve will read everything you've written<br/>and offer you an honest portrait.
             </p>
-            <button onClick={generate} disabled={loading}
-              style={{ padding:"13px 36px", background:"#2C1F14", color:"#B5936E", border:"none", borderRadius:12, fontSize:15, fontWeight:600, cursor:loading?"default":"pointer", fontFamily:"'DM Sans',sans-serif", opacity:loading?.7:1 }}>
-              {loading ? "Reading your writing..." : "Generate my portrait"}
-            </button>
-            {loading && <div style={{ marginTop:32 }}><TypingRow label={true}/></div>}
+            {!isPro ? (
+              <div style={{ background:"#F5EDE3", border:"1px solid #DCC9B3", borderRadius:16, padding:"24px", textAlign:"center" }}>
+                <div style={{ fontSize:13, color:"#8B5E3C", lineHeight:1.6, marginBottom:16 }}>
+                  Your psychological portrait is a <strong>Pro</strong> feature.
+                </div>
+                <button onClick={onUpgrade}
+                  style={{ padding:"11px 28px", background:"#2C1F14", color:"#B5936E", border:"none", borderRadius:11, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                  ✦ Upgrade to generate portrait
+                </button>
+              </div>
+            ) : (
+              <>
+                <button onClick={generate} disabled={loading}
+                  style={{ padding:"13px 36px", background:"#2C1F14", color:"#B5936E", border:"none", borderRadius:12, fontSize:15, fontWeight:600, cursor:loading?"default":"pointer", fontFamily:"'DM Sans',sans-serif", opacity:loading?.7:1 }}>
+                  {loading ? "Reading your writing..." : "Generate my portrait"}
+                </button>
+                {loading && <div style={{ marginTop:32 }}><TypingRow label={true}/></div>}
+              </>
+            )}
           </div>
         )}
 
@@ -431,6 +445,91 @@ function ProfileView({ userName, entries, cards }) {
   );
 }
 
+// ─── UPGRADE MODAL ────────────────────────────────────────────────────────────
+
+function UpgradeModal({ reason, currentPlan, onClose }) {
+  const plans = [
+    {
+      id: "pro",
+      name: "Pro",
+      price: "$8",
+      period: "/month",
+      description: "For individuals serious about self-reflection",
+      features: ["Unlimited journal entries", "Unlimited cards", "✦ Make sense of this (synthesis)", "Psychological portrait", "Priority support"],
+      cta: "Upgrade to Pro",
+      accent: "#B5936E",
+      bg: "#2C1F14",
+      // Replace with your Stripe Payment Link
+      link: "https://buy.stripe.com/your-pro-link",
+    },
+    {
+      id: "duo",
+      name: "Duo",
+      price: "$14",
+      period: "/month",
+      description: "For two people working through something together",
+      features: ["Everything in Pro", "Invite a partner to your entry", "AI-mediated joint sessions", "Shared conflict resolution", "Both parties get full Pro access"],
+      cta: "Upgrade to Duo",
+      accent: "#3730A3",
+      bg: "#1e1b4b",
+      // Replace with your Stripe Payment Link
+      link: "https://buy.stripe.com/your-duo-link",
+    },
+  ];
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,31,20,.55)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, backdropFilter:"blur(8px)" }}
+      onClick={onClose}>
+      <div className="fi" style={{ background:"#FAF7F2", borderRadius:24, padding:"32px", width:"100%", maxWidth:520, margin:20, boxShadow:"0 32px 80px rgba(44,31,20,.25)", maxHeight:"90vh", overflowY:"auto" }}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ width:44, height:44, borderRadius:14, background:"#2C1F14", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}><Logo s={20}/></div>
+          <h2 style={{ fontFamily:"'Lora',serif", fontSize:26, fontWeight:600, color:"#2C1F14", marginBottom:8 }}>Unlock more of Resolve</h2>
+          {reason && <p style={{ fontSize:13.5, color:"#A09080", lineHeight:1.6 }}>{reason}</p>}
+        </div>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {plans.map(p => (
+            <div key={p.id} style={{ background:p.bg, borderRadius:18, padding:"22px 24px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:p.accent, textTransform:"uppercase", letterSpacing:1.6, marginBottom:3 }}>{p.name}</div>
+                  <div style={{ display:"flex", alignItems:"baseline", gap:2 }}>
+                    <span style={{ fontFamily:"'Lora',serif", fontSize:30, fontWeight:600, color:"#FAF7F2" }}>{p.price}</span>
+                    <span style={{ fontSize:13, color:"rgba(250,247,242,.4)" }}>{p.period}</span>
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize:12.5, color:"rgba(250,247,242,.45)", marginBottom:14, lineHeight:1.5 }}>{p.description}</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:18 }}>
+                {p.features.map((f,i) => (
+                  <div key={i} style={{ display:"flex", gap:8, alignItems:"flex-start" }}>
+                    <span style={{ color:p.accent, fontSize:13, flexShrink:0, marginTop:1 }}>✓</span>
+                    <span style={{ fontSize:13, color:"rgba(250,247,242,.75)", lineHeight:1.5 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <a href={p.link} target="_blank" rel="noreferrer"
+                style={{ display:"block", textAlign:"center", padding:"12px", background:p.accent, color:p.id==="pro"?"#1A1208":"#FAF7F2", borderRadius:11, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", textDecoration:"none" }}>
+                {p.cta} →
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop:20, textAlign:"center" }}>
+          <p style={{ fontSize:11.5, color:"#C5BDB5", marginBottom:8 }}>
+            Current plan: <strong style={{ color:"#A09080" }}>{currentPlan === "free" ? "Free" : currentPlan === "pro" ? "Pro" : "Duo"}</strong>
+          </p>
+          <button onClick={onClose} style={{ fontSize:13, color:"#B8AFA5", background:"none", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -462,6 +561,19 @@ export default function App() {
   // synthesis
   const [synthesis, setSynthesis] = useState(null);
   const [synthBusy, setSynthBusy] = useState(false);
+
+  // billing
+  const [plan, setPlan] = useState("free");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+
+  // debounce timer for card saves
+  const cardSaveTimer = useRef(null);
+
+  // plan limits
+  const LIMITS = { entries: 3, cards: 10 };
+  const isPro = plan === "pro" || plan === "duo";
+  const isDuo = plan === "duo";
 
   const [section, setSection] = useState("entries"); // entries | cards | profile
   const [newTitle, setNewTitle] = useState("");
@@ -505,6 +617,7 @@ export default function App() {
       const profile = await db.getProfile(user.id);
       if (!profile) { setNeedsProfile(true); return; }
       setUserName(profile.name);
+      setPlan(profile.plan || "free");
       const [loadedEntries, loadedCards] = await Promise.all([
         db.loadEntries(user.id),
         db.loadCards(user.id),
@@ -545,33 +658,35 @@ export default function App() {
     setEntries(p => {
       const updated = p.map(e => e.id === id ? fn(e) : e);
       const changed = updated.find(e => e.id === id);
-      if (changed && user) db.updateEntry(changed, user.id);
+      if (changed) db.updateEntry(changed); // no userId — ownership never changes on update
       return updated;
     });
-  }, [user]);
+  }, []);
 
   const patchCard = useCallback((id, fn) => {
-    setCards(p => {
-      const updated = p.map(c => c.id === id ? fn(c) : c);
-      const changed = updated.find(c => c.id === id);
-      if (changed) db.updateCard(changed);
-      return updated;
-    });
+    setCards(p => p.map(c => c.id === id ? fn(c) : c));
   }, []);
 
   // ── journal ───────────────────────────────────────────────────────────────
 
   async function startEntry() {
     if (!newTitle.trim()) return;
+    // free-tier limit check
+    if (!isPro && entries.length >= LIMITS.entries) {
+      setUpgradeReason(`Free accounts are limited to ${LIMITS.entries} entries.`);
+      setShowUpgrade(true); return;
+    }
     const e = { id:uid(), title:newTitle.trim(), inviteCode:codeGen(), status:"solo", partyA:{ name:userName, chatHistory:[], insights:{} }, partyB:null, groupChat:[], createdAt:now() };
-    setEntries(p => [...p, e]);
+    setEntries(p => [e, ...p]);
     if (user) await db.insertEntry(e, user.id);
     setActiveId(e.id); setARole("A"); setMsgs([]);
     setModal(null); setNewTitle(""); setScreen("write"); setBusy(true);
     const raw = await ask([], sysJournal(userName, e, 0));
     const ai = { id:uid(), role:"assistant", content:clean(raw) };
+    const firstEntry = { ...e, partyA:{ ...e.partyA, chatHistory:[ai], insights:mergeI({}, parseP(raw)) } };
     setMsgs([ai]);
-    setEntries(p => p.map(x => x.id===e.id ? { ...x, partyA:{ ...x.partyA, chatHistory:[ai], insights:mergeI({}, parseP(raw)) } } : x));
+    setEntries(p => p.map(x => x.id===e.id ? firstEntry : x));
+    if (user) await db.updateEntry(firstEntry); // ← persist first AI greeting
     setBusy(false);
   }
 
@@ -580,14 +695,16 @@ export default function App() {
     const found = user ? await db.findEntryByCode(code) : entries.find(e => e.inviteCode===code);
     if (!found) { alert("Code not found."); return; }
     const ud = { ...found, status:"both", partyB:{ name:userName, chatHistory:[], insights:{} } };
-    setEntries(p => [...p.filter(e => e.id!==found.id), ud]);
+    setEntries(p => [ud, ...p.filter(e => e.id!==found.id)]);
     if (user) await db.joinEntry(found.id, user.id, ud.partyB);
     setActiveId(found.id); setARole("B"); setMsgs([]);
     setModal(null); setJoinCode(""); setScreen("write"); setBusy(true);
     const raw = await ask([], sysJournal(userName, ud, 0));
     const ai = { id:uid(), role:"assistant", content:clean(raw) };
+    const joinedEntry = { ...ud, partyB:{ ...ud.partyB, chatHistory:[ai], insights:mergeI({}, parseP(raw)) } };
     setMsgs([ai]);
-    setEntries(p => p.map(e => e.id===found.id ? { ...e, partyB:{ ...e.partyB, chatHistory:[ai], insights:mergeI({}, parseP(raw)) } } : e));
+    setEntries(p => p.map(e => e.id===found.id ? joinedEntry : e));
+    if (user) await db.updateEntry(joinedEntry); // ← persist first AI greeting for party B
     setBusy(false);
   }
 
@@ -636,6 +753,10 @@ export default function App() {
   // ── cards ─────────────────────────────────────────────────────────────────
 
   function createCard() {
+    if (!isPro && cards.length >= LIMITS.cards) {
+      setUpgradeReason(`Free accounts are limited to ${LIMITS.cards} cards.`);
+      setShowUpgrade(true); return;
+    }
     const c = { id:uid(), body:"", createdAt:now(), updatedAt:now() };
     setCards(p => [c, ...p]);
     if (user) db.insertCard(c, user.id);
@@ -644,7 +765,13 @@ export default function App() {
   }
 
   function openCardById(id) { setActiveCard(id); setScreen("card"); }
-  function updateCard(updated) { patchCard(updated.id, () => updated); }
+  function updateCard(updated) {
+    // update local state immediately for snappy UX
+    setCards(p => p.map(c => c.id === updated.id ? updated : c));
+    // debounce the DB write — only fires after 800ms of inactivity
+    clearTimeout(cardSaveTimer.current);
+    cardSaveTimer.current = setTimeout(() => db.updateCard(updated), 800);
+  }
   function deleteCard(id) {
     setCards(p => p.filter(c => c.id!==id));
     if (user) db.deleteCard(id);
@@ -653,6 +780,7 @@ export default function App() {
   function closeCard() { setActiveCard(null); setScreen("home"); setSection("cards"); }
 
   async function makeSense() {
+    if (!isPro) { setUpgradeReason("Synthesis is a Pro feature."); setShowUpgrade(true); return; }
     const texts = filledCards.map(c => c.body);
     setSynthBusy(true); setSynthesis(null);
     const raw = await ask([{ role:"user", content:"Read my cards and tell me what you see." }], sysSynthesis(userName, texts));
@@ -664,7 +792,8 @@ export default function App() {
 
   function goHome() { setScreen("home"); setActiveId(null); setARole(null); setMsgs([]); setActiveCard(null); }
   function openEntry(e) {
-    const role = e.partyA.name===userName?"A":"B";
+    // use stored user IDs for reliable role detection (name comparison fails if both users share a name)
+    const role = user?.id === e.userId ? "A" : "B";
     const pk = role==="A"?"partyA":"partyB";
     setActiveId(e.id); setARole(role);
     if (e.status==="mediation") { setScreen("group"); setMsgs(e.groupChat||[]); }
@@ -807,6 +936,11 @@ export default function App() {
                         ))}
                       </div>
                       <div style={{ padding:"8px 8px 10px", borderTop:"1px solid #E0D9D0", display:"flex", flexDirection:"column", gap:5 }}>
+                        {!isPro && entries.length > 0 && (
+                          <div style={{ fontSize:10.5, color:"#C5BDB5", textAlign:"center", marginBottom:2 }}>
+                            {entries.length}/{LIMITS.entries} entries used
+                          </div>
+                        )}
                         <button onClick={()=>setModal("new")} style={{ width:"100%", padding:"9px 0", borderRadius:9, border:"none", background:"#2C1F14", color:"#B5936E", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>+ New entry</button>
                         <button onClick={()=>setModal("join")} style={{ width:"100%", padding:"8px 0", borderRadius:9, border:"1px solid #E0D9D0", background:"transparent", color:"#A09080", fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Join someone's entry</button>
                       </div>
@@ -840,9 +974,20 @@ export default function App() {
                   )}
                 </>
               )}
-              {/* SIGN OUT */}
+              {/* PLAN + SIGN OUT */}
               {!sidebarCollapsed && (
                 <div style={{ padding:"8px 10px 12px", borderTop:"1px solid #E0D9D0", marginTop:"auto" }}>
+                  {plan === "free" && (
+                    <button onClick={()=>{ setUpgradeReason(""); setShowUpgrade(true); }}
+                      style={{ width:"100%", padding:"8px 0", borderRadius:8, border:"none", background:"#2C1F14", color:"#B5936E", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", marginBottom:5 }}>
+                      ✦ Upgrade
+                    </button>
+                  )}
+                  {plan !== "free" && (
+                    <div style={{ textAlign:"center", fontSize:11, color:"#B5936E", fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:.8 }}>
+                      {plan === "duo" ? "✦ Duo" : "✦ Pro"}
+                    </div>
+                  )}
                   <button onClick={handleSignOut}
                     style={{ width:"100%", padding:"7px 0", borderRadius:8, border:"1px solid #E0D9D0", background:"transparent", color:"#B8AFA5", fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
                     Sign out
@@ -946,7 +1091,8 @@ export default function App() {
 
                   {/* PROFILE HOME */}
                   {section === "profile" && (
-                    <ProfileView userName={userName} entries={entries} cards={cards}/>
+                    <ProfileView userName={userName} entries={entries} cards={cards} isPro={isPro}
+                      onUpgrade={()=>{ setUpgradeReason("Your psychological portrait is a Pro feature."); setShowUpgrade(true); }}/>
                   )}
                 </>
               )}
@@ -967,7 +1113,7 @@ export default function App() {
                       {exchangeCount < 3 ? "sharing" : "processing"}
                     </span>
                     {aRole==="A" && (
-                      <button onClick={()=>setModal("invite")} style={{ padding:"5px 13px", background:"transparent", border:"1px solid #E0D9D0", borderRadius:8, cursor:"pointer", fontSize:12, color:"#A09080", fontFamily:"'DM Sans',sans-serif" }}>+ Invite someone</button>
+                      <button onClick={()=>{ if(!isDuo){setUpgradeReason("Inviting a partner is a Duo feature.");setShowUpgrade(true);}else setModal("invite"); }} style={{ padding:"5px 13px", background:"transparent", border:"1px solid #E0D9D0", borderRadius:8, cursor:"pointer", fontSize:12, color:"#A09080", fontFamily:"'DM Sans',sans-serif" }}>+ Invite someone</button>
                     )}
                     {hasPartner && (
                       <button onClick={openGroup} style={{ padding:"6px 14px", background:"#2C1F14", color:"#B5936E", border:"none", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600, fontFamily:"'DM Sans',sans-serif", flexShrink:0 }}>
@@ -1028,6 +1174,11 @@ export default function App() {
         )}
 
         {/* MODALS */}
+        {/* UPGRADE MODAL */}
+        {showUpgrade && (
+          <UpgradeModal reason={upgradeReason} currentPlan={plan} onClose={()=>setShowUpgrade(false)}/>
+        )}
+
         {modal && (
           <div style={{ position:"fixed", inset:0, background:"rgba(44,31,20,.4)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100, backdropFilter:"blur(5px)" }}
             onClick={()=>setModal(null)}>
