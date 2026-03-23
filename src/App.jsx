@@ -676,7 +676,7 @@ export default function App() {
       setUpgradeReason(`Free accounts are limited to ${LIMITS.entries} entries.`);
       setShowUpgrade(true); return;
     }
-    const e = { id:uid(), title:newTitle.trim(), inviteCode:codeGen(), status:"solo", partyA:{ name:userName, chatHistory:[], insights:{} }, partyB:null, groupChat:[], createdAt:now() };
+    const e = { id:uid(), userId:user?.id, partyBUserId:null, title:newTitle.trim(), inviteCode:codeGen(), status:"solo", partyA:{ name:userName, chatHistory:[], insights:{} }, partyB:null, groupChat:[], createdAt:now() };
     setEntries(p => [e, ...p]);
     if (user) await db.insertEntry(e, user.id);
     setActiveId(e.id); setARole("A"); setMsgs([]);
@@ -928,7 +928,7 @@ export default function App() {
                     <>
                       <div style={{ flex:1, overflowY:"auto", padding:"8px 8px 0" }}>
                         {entries.length===0 && <p style={{ fontSize:12, color:"#C5BDB5", padding:"12px 8px", lineHeight:1.6, fontStyle:"italic" }}>Your entries will appear here.</p>}
-                        {[...entries].reverse().map(e => (
+                        {entries.map(e => (
                           <div key={e.id} className="eh" onClick={()=>openEntry(e)}
                             style={{ padding:"9px 10px", borderRadius:9, cursor:"pointer", marginBottom:3, background:e.id===activeId?"#E8E0D6":"transparent", transition:"background .1s" }}>
                             <div style={{ fontWeight:500, fontSize:13.5, color:"#2C1F14", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.title}</div>
